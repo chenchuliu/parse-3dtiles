@@ -1,1 +1,4 @@
-/b3dm文件读取测试/.idea
+b3dmReader/.idea/.gitignore
+b3dmReader/.idea/b3dm文件读取测试.iml
+b3dmReader/.idea/jsLibraryMappings.xml
+b3dmReader/.idea/modules.xml

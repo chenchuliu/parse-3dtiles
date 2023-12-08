@@ -1,0 +1,14 @@
+{
+  "type": "commonjs",
+  "name": "b3dmReader",
+  "version": "1.0",
+  "description": "b3dm文件读取",
+  "main": "index.js",
+  "repository": "https://github.com/chenchuliu/parse-3dtiles/tree/main/b3dmReader",
+  "author": "chenyh",
+  "license": "MIT",
+
+  "scripts": {
+    "start": "node ./index.js"
+  }
+}
