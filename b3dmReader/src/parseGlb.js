@@ -13,13 +13,9 @@ function parseGlb(buffer, byteOffset = 0, byteLength) {
   while (offset < header.gltfLength) {
     const chunkLength = dataView.getUint32(offset, true);
     offset += 4;
-    const chunkType = getStrByBuffer(
-      dataView.buffer,
-      dataView.byteOffset + offset,
-      4
-    );
+    const chunkType = dataView.getUint32(offset, true);
     offset += 4;
-    if (chunkType.trim() === "JSON") {
+    if (chunkType === 0x4e4f534a) {
       let chunkData = getStrByBuffer(
         dataView.buffer,
         dataView.byteOffset + offset,
@@ -29,17 +25,20 @@ function parseGlb(buffer, byteOffset = 0, byteLength) {
       chunkDatas.push({
         chunkLength: chunkLength,
         chunkType: chunkType,
-        chunkData: JSON.parse(chunkData)
+        chunkData: JSON.parse(chunkData),
       });
       offset += chunkLength;
-    }  else if(chunkType.trim() === "BIN"){
+    } else if (chunkType === 0x004e4942) {
       const chunkParam = chunkDatas[0].chunkData;
-      const binView = new DataView(dataView.buffer, dataView.byteOffset + offset, chunkLength);
+      const binView = new DataView(
+        dataView.buffer,
+        dataView.byteOffset + offset,
+        chunkLength
+      );
       parseBINChunk(binView, chunkParam);
     }
   }
 }
-
 
 function getHeader(dataView) {
   let offset = 0;
@@ -65,48 +64,84 @@ function getStrByBuffer(buffer, offset, length) {
   return str;
 }
 // 根据 JSON 中的参数解析 Binary 中的 索引数据 等
-function parseBINChunk(dataView, chunkData){
+function parseBINChunk(dataView, chunkData) {
   const accessors = [];
   const scenes = chunkData.scenes;
-
+  const bufferViews = chunkData.bufferViews;
   scenes.forEach((scene) => {
     const nodes = scene.nodes;
-    nodes.forEach((item)=>{
+    nodes.forEach((item) => {
       const node = chunkData.nodes[item];
       // 取出meshes
-      if(node.hasOwnProperty('mesh')){
+      if (node.hasOwnProperty("mesh")) {
         const meshes = chunkData.meshes;
-        meshes.forEach((mesh)=>{
+        meshes.forEach((mesh) => {
           const primitives = mesh.primitives;
           primitives.forEach((primitive) => {
             for (const key in primitive) {
               // vertex attribute
-              if(key === "attributes"){
+              if (key === "attributes") {
                 const attributes = primitive[key];
                 for (const attribute in attributes) {
                   const accessor = chunkData.accessors[attributes[attribute]];
                   readAccessor(accessor, bufferViews, dataView);
                 }
-              }else if(key === "indices"){
+              } else if (key === "indices") {
                 const accessor = chunkData.accessors[primitive[key]];
-              }else if(key === "material"){
+              } else if (key === "material") {
                 const accessor = chunkData.accessors[primitive[key]];
               }
             }
-          })
-        })
-      }else if(node.name === "Camera"){
+          });
+        });
+      } else if (node.name === "Camera") {
         // do something
-      }else if(node.name === "Light"){
+      } else if (node.name === "Light") {
         // do something
-      }else if(node.name === "Skin"){
+      } else if (node.name === "Skin") {
         // do something
       }
-    })
-  })
+    });
+  });
 }
 
+function readAccessor(accessor, bufferViews, dataView) {
+  let offset = 0;
+  const datas = [];
+  const bufferView = bufferViews[accessor.bufferView];
+  const byteOffset = bufferView.byteOffset;
+  let data;
 
-function readAccessor(accessor, bufferViews, dataView){
-  const 
+  while (offset < bufferView.byteLength) {
+    switch (accessor.componentType) {
+      case 5120:
+        data = dataView.getInt8(offset + byteOffset, true);
+        offset += 1;
+        break;
+      case 5121:
+        data = dataView.getUint8(offset + byteOffset, true);
+        offset += 1;
+        break;
+      case 5122:
+        data = dataView.getInt16(offset + byteOffset, true);
+        offset += 2;
+        break;
+      case 5123:
+        data = dataView.getUint16(offset + byteOffset, true);
+        offset += 2;
+        break;
+      case 5125:
+        data = dataView.getUint32(offset + byteOffset, true);
+        offset += 4;
+        break;
+      case 5126:
+        data = dataView.getFloat32(offset + byteOffset, true);
+        offset += 4;
+        break;
+      default:
+        break;
+    }
+    datas.push(data);
+  }
+  return datas;
 }
