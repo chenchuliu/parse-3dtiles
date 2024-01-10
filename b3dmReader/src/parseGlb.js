@@ -13,8 +13,10 @@ function parseGlb(buffer, byteOffset = 0, byteLength) {
   while (offset < header.gltfLength) {
     const chunkLength = dataView.getUint32(offset, true);
     offset += 4;
+    console.log(offset);
     const chunkType = dataView.getUint32(offset, true);
     offset += 4;
+    console.log(offset);
     if (chunkType === 0x4e4f534a) {
       let chunkData = getStrByBuffer(
         dataView.buffer,
@@ -28,6 +30,7 @@ function parseGlb(buffer, byteOffset = 0, byteLength) {
         chunkData: JSON.parse(chunkData),
       });
       offset += chunkLength;
+      console.log(offset);
     } else if (chunkType === 0x004e4942) {
       const chunkParam = chunkDatas[0].chunkData;
       const binView = new DataView(
@@ -36,6 +39,8 @@ function parseGlb(buffer, byteOffset = 0, byteLength) {
         chunkLength
       );
       parseBINChunk(binView, chunkParam);
+      offset += chunkLength;
+      console.log(offset);
     }
   }
 }
@@ -72,37 +77,45 @@ function parseBINChunk(dataView, chunkData) {
     const nodes = scene.nodes;
     nodes.forEach((item) => {
       const node = chunkData.nodes[item];
+      readNode(node, nodes);
       // 取出meshes
-      if (node.hasOwnProperty("mesh")) {
-        const meshes = chunkData.meshes;
-        meshes.forEach((mesh) => {
-          const primitives = mesh.primitives;
-          primitives.forEach((primitive) => {
-            for (const key in primitive) {
-              // vertex attribute
-              if (key === "attributes") {
-                const attributes = primitive[key];
-                for (const attribute in attributes) {
-                  const accessor = chunkData.accessors[attributes[attribute]];
-                  readAccessor(accessor, bufferViews, dataView);
-                }
-              } else if (key === "indices") {
-                const accessor = chunkData.accessors[primitive[key]];
-              } else if (key === "material") {
-                const accessor = chunkData.accessors[primitive[key]];
-              }
-            }
-          });
-        });
-      } else if (node.name === "Camera") {
-        // do something
-      } else if (node.name === "Light") {
-        // do something
-      } else if (node.name === "Skin") {
-        // do something
-      }
     });
   });
+}
+
+function readNode(node, nodes) {
+  let nodeDatas = [];
+  if (node.hasOwnProperty("mesh")) {
+    const meshes = chunkData.meshes;
+    meshes.forEach((mesh) => {
+      const primitives = mesh.primitives;
+      primitives.forEach((primitive) => {
+        for (const key in primitive) {
+          // vertex attribute
+          if (key === "attributes") {
+            const attributes = primitive[key];
+            for (const attribute in attributes) {
+              const accessor = chunkData.accessors[attributes[attribute]];
+              readAccessor(accessor, bufferViews, dataView);
+            }
+          } else if (key === "indices") {
+            const accessor = chunkData.accessors[primitive[key]];
+          } else if (key === "material") {
+            const accessor = chunkData.accessors[primitive[key]];
+          }
+        }
+      });
+    });
+  } else if (node.hasOwnProperty("children")) {
+    node.children.forEach((childNodeIndex) => {
+      const nodeData = readNode(nodes[childNodeIndex], nodes);
+      nodeDatas.push(nodeData);
+    });
+  } else if (node.hasOwnProperty("camera")) {
+    // do something
+  } else if (node.hasOwnProperty("skin")) {
+    // do something
+  }
 }
 
 function readAccessor(accessor, bufferViews, dataView) {
@@ -111,7 +124,7 @@ function readAccessor(accessor, bufferViews, dataView) {
   const bufferView = bufferViews[accessor.bufferView];
   const byteOffset = bufferView.byteOffset;
   let data;
-
+  console.log(offset);
   while (offset < bufferView.byteLength) {
     switch (accessor.componentType) {
       case 5120:
@@ -143,5 +156,6 @@ function readAccessor(accessor, bufferViews, dataView) {
     }
     datas.push(data);
   }
+  console.log(datas);
   return datas;
 }
