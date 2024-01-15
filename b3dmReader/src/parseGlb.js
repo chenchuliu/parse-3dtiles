@@ -77,13 +77,30 @@ function parseBINChunk(dataView, chunkData) {
     const nodes = scene.nodes;
     nodes.forEach((item) => {
       const node = chunkData.nodes[item];
-      readNode(node, nodes);
+      readNode(node, chunkData, dataView);
       // 取出meshes
     });
   });
 }
 
 function readNode(node, nodes) {
+  let meshIndexs = [];
+  if (node.hasOwnProperty("mesh")) {
+    return [{ type: "mesh", meshIndex: node.mesh }];
+  } else if (node.hasOwnProperty("children")) {
+    node.children.forEach((childNode) => {
+      const tempMesh = readNode(nodes[childNode], nodes);
+      meshIndexs.push(...tempMesh);
+    });
+  } else if (node.hasOwnProperty("camera")) {
+    return [{ type: "camera", data: node.camera }];
+  } else if (node.hasOwnProperty("skin")) {
+    return [{ type: "skin", accessoIndex: node.skin }];
+  }
+  return meshIndexs;
+}
+
+function _readNode(node, chunkData, dataView) {
   let nodeDatas = [];
   if (node.hasOwnProperty("mesh")) {
     const meshes = chunkData.meshes;
@@ -96,7 +113,7 @@ function readNode(node, nodes) {
             const attributes = primitive[key];
             for (const attribute in attributes) {
               const accessor = chunkData.accessors[attributes[attribute]];
-              readAccessor(accessor, bufferViews, dataView);
+              readAccessor(accessor, chunkData.bufferViews, dataView);
             }
           } else if (key === "indices") {
             const accessor = chunkData.accessors[primitive[key]];
@@ -108,14 +125,16 @@ function readNode(node, nodes) {
     });
   } else if (node.hasOwnProperty("children")) {
     node.children.forEach((childNodeIndex) => {
-      const nodeData = readNode(nodes[childNodeIndex], nodes);
-      nodeDatas.push(nodeData);
+      const nodeData = readNode(chunkData.nodes[childNodeIndex], chunkData);
+      nodeDatas = nodeDatas.concat(nodeData);
     });
   } else if (node.hasOwnProperty("camera")) {
     // do something
   } else if (node.hasOwnProperty("skin")) {
     // do something
   }
+  console.log(nodeDatas);
+  return nodeDatas;
 }
 
 function readAccessor(accessor, bufferViews, dataView) {

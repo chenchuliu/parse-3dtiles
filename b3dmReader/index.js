@@ -1,7 +1,7 @@
 const parseGlb = require("./src/parseGlb");
 const fs = require("fs");
 
-fs.readFile("./data/test.glb", (err, data) => {
+fs.readFile("./data/glb.glb", (err, data) => {
   if (err) {
     console.log(err);
     return;
