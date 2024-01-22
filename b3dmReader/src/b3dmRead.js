@@ -1,23 +1,23 @@
 let fs = require("fs");
 const writeStream = fs.createWriteStream('../data/test');
-// fs.readFile('../data/14-27362-4887.b3dm', (err, data)=>{
-// 	if(err){
-// 		console.error('Error reading file:', err);
-//     return;
-// 	}
-// 	const b3dm = b3dmParse(data);
-
-// 	gltfParse(b3dm.gltf);
-// })
-
-fs.readFile('../data/untitled.glb', (err, data)=>{
+fs.readFile('../data/test.b3dm', (err, data)=>{
 	if(err){
 		console.error('Error reading file:', err);
     return;
 	}
-	const glb = new Uint8Array(data.buffer, 0);
-	gltfParse(glb);
+	const b3dm = b3dmParse(data);
+
+	gltfParse(b3dm.gltf);
 })
+
+// fs.readFile('../data/untitled.glb', (err, data)=>{
+// 	if(err){
+// 		console.error('Error reading file:', err);
+//     return;
+// 	}
+// 	const glb = new Uint8Array(data.buffer, 0);
+// 	gltfParse(glb);
+// })
 
 // 解析 .b3dm 文件
 function b3dmParse(buffer){
@@ -123,6 +123,7 @@ function gltfParse(glb){
 	if(chunk2Type === 'JSON'){
 		uint8Array = glb.subarray(offset, offset += chunk1Length);
 		chunk2Data = JSON.parse(new TextDecoder('utf-8').decode(uint8Array));
+		console.log(chunk2Data)
 	}else{
 		// uint8Array = glb.subarray(offset,offset += chunk2Length);
 		const binView = new DataView(uint8Array.buffer, glb.byteOffset + offset, chunk2Length);
@@ -164,7 +165,7 @@ function readBINData(chunk1Data, dataview){
 				offset += 4;
 				position.push([x,y,z]);
 				// writeStream.write(`v ${x} ${y} ${z}\n`);
-				console.log(`Float32 VEC3 x:${x},y:${y},z:${z}`);
+				// console.log(`Float32 VEC3 x:${x},y:${y},z:${z}`);
 			}
 			positions.push(position);
 		}else if(accessor.componentType === 5126 && accessor.type === 'VEC2'){ 
