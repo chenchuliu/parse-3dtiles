@@ -1,6 +1,6 @@
 let fs = require("fs");
 const writeStream = fs.createWriteStream('../data/test');
-fs.readFile('../data/test.b3dm', (err, data)=>{
+fs.readFile('../data/14-26958-4560.b3dm', (err, data)=>{
 	if(err){
 		console.error('Error reading file:', err);
     return;
